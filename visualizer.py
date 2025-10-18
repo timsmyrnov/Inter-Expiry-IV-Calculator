@@ -1,7 +1,7 @@
 import matplotlib.pyplot as plt
 import numpy as np
 
-def plot(atm_ivs, interval_ivs=None):
+def ann_plot(atm_ivs, interval_ivs=None):
     if not atm_ivs:
         print("Nothing to plot.")
         return
@@ -57,6 +57,50 @@ def plot(atm_ivs, interval_ivs=None):
 
     yvals = atm_vals + [v for v in interval_ivs.values()] if interval_ivs else atm_vals
     ax.set_ylim(0, max(yvals) + 0.05)
+
+    plt.tight_layout()
+    plt.show()
+
+def deann_plot(atm_ivs, interval_ivs):
+    if not interval_ivs:
+        print("Nothing to plot.")
+        return
+
+    import matplotlib.pyplot as plt
+
+    expiry_days = sorted(atm_ivs.keys()) if atm_ivs else sorted({t for rng in interval_ivs for t in rng})
+
+    _, ax = plt.subplots(figsize=(9, 4.8))
+
+    first_key = next(iter(sorted(interval_ivs.keys())))
+    for (t1, t2), v in sorted(interval_ivs.items()):
+        if v is None or t2 <= t1:
+            continue
+        ax.bar(
+            t1, v,
+            width=t2 - t1, align="edge",
+            color="#8C35FF", alpha=0.35,
+            edgecolor="#444", linewidth=0.6,
+            label="Deann interval IV" if (t1, t2) == first_key else None,
+            zorder=1
+        )
+        ax.text((t1 + t2) / 2, v * 0.02, f"({t1},{t2})",
+                ha="center", va="bottom", fontsize=8, color="#444", alpha=0.9)
+
+    ax.set_xticks(expiry_days)
+    ax.set_xticklabels([str(x) for x in expiry_days])
+    ax.set_xlabel("Days to expiry", labelpad=6)
+    ax.set_ylabel("Deannualized interval vol", labelpad=6)
+    ax.set_title("Deannualized IV Between Expiries", pad=10)
+    ax.grid(axis="y", linestyle="--", alpha=0.25)
+    ax.set_axisbelow(True)
+
+    handles, labels = ax.get_legend_handles_labels()
+    if handles:
+        ax.legend(handles[:1], labels[:1], frameon=False)
+
+    ymax = max(v for v in interval_ivs.values() if v is not None)
+    ax.set_ylim(0, ymax * 1.05)
 
     plt.tight_layout()
     plt.show()

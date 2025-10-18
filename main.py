@@ -1,7 +1,7 @@
 import math
 import pandas as pd
 import yfinance as yf
-from visualizer import plot
+from visualizer import ann_plot, deann_plot
 
 DAY_BASIS = 365
 
@@ -43,35 +43,43 @@ def get_ivs(symbol, targets_days) -> dict:
 
     return exp_ivs
 
-def inter_iv_calc(expiry_atm_vols: dict, day_basis: int = DAY_BASIS) -> dict:
+def inter_iv_calc(expiry_atm_vols: dict, day_basis: int = DAY_BASIS):
     keys = sorted(expiry_atm_vols.keys())
     if len(keys) < 2:
-        return {}
+        return {}, {}
 
     variances = {k: (expiry_atm_vols[k] ** 2) * (k / day_basis) for k in keys}
-    inter_ivs = {}
+
+    inter_ivs_ann = {}
+    inter_ivs_deann = {}
 
     for i in range(len(keys) - 1):
         t1, t2 = keys[i], keys[i + 1]
         T_interval = (t2 - t1) / day_basis
-        var_interval = variances[t2] - variances[t1]
 
+        var_interval = variances[t2] - variances[t1]
         if var_interval < 0:
             var_interval = 0.0
 
-        inter_iv = math.sqrt(var_interval / T_interval) if T_interval > 0 else float("nan")
-        inter_ivs[(t1, t2)] = inter_iv
+        if T_interval > 0:
+            sigma_ann = math.sqrt(var_interval / T_interval)
+            sigma_deann = math.sqrt(var_interval)
+        else:
+            sigma_ann = float("nan")
+            sigma_deann = float("nan")
 
-    return inter_ivs
+        inter_ivs_ann[(t1, t2)] = sigma_ann
+        inter_ivs_deann[(t1, t2)] = sigma_deann
+
+    return inter_ivs_ann, inter_ivs_deann
 
 if __name__ == "__main__":
     symbol = "UBER"
     target_expiries = [1, 8, 15, 22]
 
     atm_ivs = get_ivs(symbol, target_expiries)
-    inter_ivs = inter_iv_calc(atm_ivs)
+    inter_ivs_ann = inter_iv_calc(atm_ivs)[0]
+    inter_ivs_deann = inter_iv_calc(atm_ivs)[1]
 
-    print("ATMs by actual listed days:", atm_ivs)
-    print("Interval IVs:", inter_ivs)
-
-    plot(atm_ivs, inter_ivs)
+    ann_plot(atm_ivs, inter_ivs_ann)
+    deann_plot(atm_ivs, inter_ivs_deann)
