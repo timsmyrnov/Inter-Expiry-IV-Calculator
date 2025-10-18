@@ -1,6 +1,7 @@
 import math
 import pandas as pd
 import yfinance as yf
+from visualizer import plot
 
 DAY_BASIS = 365
 
@@ -64,7 +65,13 @@ def inter_iv_calc(expiry_atm_vols: dict, day_basis: int = DAY_BASIS) -> dict:
     return inter_ivs
 
 if __name__ == "__main__":
-    expiries = [1, 8, 15, 22]
-    ivs = get_ivs("UBER", expiries)
-    print("ATMs by actual listed days:", ivs)
-    print("Interval IVs:", inter_iv_calc(ivs))
+    symbol = "UBER"
+    target_expiries = [1, 8, 15, 22]
+
+    atm_ivs = get_ivs(symbol, target_expiries)
+    inter_ivs = inter_iv_calc(atm_ivs)
+
+    print("ATMs by actual listed days:", atm_ivs)
+    print("Interval IVs:", inter_ivs)
+
+    plot(atm_ivs, inter_ivs)
